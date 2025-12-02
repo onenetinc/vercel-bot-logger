@@ -22,7 +22,7 @@ Vercel App → Vercel Log Drain → Cloud Function → BigQuery
 
 ## Quick Links
 
-- 📖 [Deployment Guide](#deployment-steps) - Step-by-step setup instructions
+- 🚀 [Deployment Guide](DEPLOYMENT.md) - Complete Google Cloud Functions deployment
 - 🧪 [Testing Guide](TESTING.md) - Comprehensive testing documentation
 - 🤖 [Supported Bots](#supported-bots) - List of all 15+ detected bots
 - 📊 [BigQuery Schema](#bigquery-schema) - Table structure and queries

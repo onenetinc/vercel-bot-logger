@@ -17,16 +17,19 @@ Complete guide for testing the Vercel Bot Logger locally and in production.
 Before testing, ensure you have:
 
 1. **Dependencies installed**:
+
    ```bash
    npm install
    ```
 
 2. **TypeScript compiled**:
+
    ```bash
    npm run build
    ```
 
 3. **Environment variables** (for local testing):
+
    ```bash
    # Copy the template and fill in your values
    cp .env.local.example .env.local
@@ -62,6 +65,7 @@ curl -i http://localhost:8080
 ```
 
 **Expected output:**
+
 ```
 HTTP/1.1 200 OK
 x-vercel-verify: your-token
@@ -98,6 +102,7 @@ curl -X POST http://localhost:8080 \
 ```
 
 **Expected console output:**
+
 ```
 Received 1 log entries from Vercel
 Filtered to 1 bot log(s)
@@ -186,6 +191,7 @@ curl -X POST http://localhost:8080 \
 ```
 
 **Expected console output:**
+
 ```
 Received 1 log entries from Vercel
 Filtered to 0 bot log(s)
@@ -203,6 +209,7 @@ curl -X POST http://localhost:8080 \
 ```
 
 **Expected console output:**
+
 ```
 Received 3 log entries from Vercel
 Filtered to 3 bot log(s)
@@ -371,6 +378,7 @@ GROUP BY bot_name;
 ```
 
 **Expected output:**
+
 ```
 bot_name         | requests
 -----------------|---------
@@ -416,6 +424,7 @@ ORDER BY requests DESC;
 2. **Check Vercel's verification** (green checkmark)
 3. **Generate traffic** to your Vercel app
 4. **Monitor Cloud Function logs**:
+
    ```bash
    gcloud functions logs read vercel-bot-logger \
      --gen2 \
@@ -458,12 +467,15 @@ curl -X POST $FUNCTION_URL \
 ### Issue: No data in BigQuery
 
 **Check:**
+
 1. Function logs for errors:
+
    ```bash
    gcloud functions logs read vercel-bot-logger --gen2 --region=us-central1 | grep -i error
    ```
 
 2. IAM permissions:
+
    ```bash
    gcloud projects get-iam-policy your-project \
      --flatten="bindings[].members" \
@@ -471,6 +483,7 @@ curl -X POST $FUNCTION_URL \
    ```
 
 3. Environment variables:
+
    ```bash
    gcloud functions describe vercel-bot-logger \
      --gen2 \
