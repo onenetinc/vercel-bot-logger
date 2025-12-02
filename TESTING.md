@@ -265,6 +265,8 @@ Filtered to 15 bot log(s)
 Successfully inserted 15 bot log(s) to BigQuery
 ```
 
+**Technical Note:** The test script uses `Content-Type: text/plain` to bypass the Functions Framework's JSON body parser, which would fail on NDJSON. In production, Vercel sends with `Content-Type: application/json`, but Cloud Functions handles this correctly with raw body access.
+
 ---
 
 ## Production Testing
