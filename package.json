@@ -5,18 +5,19 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && functions-framework --target=handleVercelLogs --signature-type=http",
+    "start": "npm run build && node -r dotenv/config node_modules/.bin/functions-framework --target=handleVercelLogs --signature-type=http dotenv_config_path=.env.local",
     "deploy": "npm run build && gcloud functions deploy vercel-bot-logger --gen2 --runtime=nodejs20 --region=us-central1 --source=. --entry-point=handleVercelLogs --trigger-http --allow-unauthenticated"
   },
   "engines": {
     "node": "20"
   },
   "dependencies": {
-    "@google-cloud/functions-framework": "^3.4.0",
-    "@google-cloud/bigquery": "^7.0.0"
+    "@google-cloud/bigquery": "^7.0.0",
+    "@google-cloud/functions-framework": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "dotenv": "^17.2.3",
     "typescript": "^5.3.0"
   }
 }

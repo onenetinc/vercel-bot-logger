@@ -26,15 +26,20 @@ Before testing, ensure you have:
    npm run build
    ```
 
-3. **Environment variables** (for local testing, create `.env.local`):
+3. **Environment variables** (for local testing):
    ```bash
-   # .env.local (DO NOT COMMIT)
-   GCP_PROJECT=your-gcp-project
-   DATASET_ID=your_dataset
-   TABLE_ID=your_table
-   VERCEL_LOG_DRAIN_SECRET=your-secret
-   VERCEL_VERIFY_TOKEN=your-token
+   # Copy the template and fill in your values
+   cp .env.local.example .env.local
+
+   # Edit .env.local with your actual values
+   # GCP_PROJECT=your-gcp-project-id
+   # DATASET_ID=your_bigquery_dataset
+   # TABLE_ID=your_bigquery_table
+   # VERCEL_LOG_DRAIN_SECRET=your-vercel-secret
+   # VERCEL_VERIFY_TOKEN=your-vercel-token
    ```
+
+   **Note:** `.env.local` is already in `.gitignore` and will not be committed.
 
 ---
 
