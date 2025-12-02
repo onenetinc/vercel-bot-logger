@@ -37,10 +37,22 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
     const verifyHeader = getVerificationHeader(VERCEL_VERIFY_TOKEN);
     res.set(verifyHeader);
 
-    // 2. Verify request signature (HMAC-SHA1)
+    // 2. Get raw body (handle both string and parsed object)
     const signature = req.headers['x-vercel-signature'] as string | undefined;
-    const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    let rawBody: string;
 
+    // If body-parser failed and gave us an object, or if it's already a string
+    if (typeof req.body === 'string') {
+      rawBody = req.body;
+    } else if (req.body && typeof req.body === 'object') {
+      // Body was parsed as JSON (single log entry)
+      rawBody = JSON.stringify(req.body);
+    } else {
+      // Empty body
+      rawBody = '';
+    }
+
+    // 3. Verify request signature (HMAC-SHA1)
     const isValidSignature = verifySignature(
       rawBody,
       signature,
@@ -54,7 +66,7 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
       return;
     }
 
-    // 3. Parse NDJSON log entries
+    // 4. Parse NDJSON log entries
     const logLines = rawBody.trim().split('\n');
     const logEntries: VercelLogEntry[] = [];
 

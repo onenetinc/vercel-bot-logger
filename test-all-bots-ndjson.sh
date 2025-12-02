@@ -48,8 +48,8 @@ echo "Sending ${#BOTS[@]} bot entries in single NDJSON request..."
 echo ""
 
 curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d "$(echo -e "$NDJSON")"
+  -H "Content-Type: text/plain" \
+  --data-binary "$(echo -e "$NDJSON")"
 
 echo ""
 echo ""
