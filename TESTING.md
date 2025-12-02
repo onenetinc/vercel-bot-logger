@@ -206,7 +206,9 @@ Successfully inserted 3 bot log(s) to BigQuery
 
 ### 8. Test All 15+ Bot Types
 
-Test script for all supported bots:
+#### Option A: Individual Requests (Sequential)
+
+Test script that sends each bot as a separate request:
 
 ```bash
 #!/bin/bash
@@ -243,6 +245,24 @@ Save as `test-all-bots.sh`, make executable (`chmod +x test-all-bots.sh`), and r
 
 ```bash
 ./test-all-bots.sh
+```
+
+#### Option B: NDJSON Format (Single Request) - **Recommended**
+
+This script tests all 15+ bots in a single NDJSON request (simulates real Vercel behavior):
+
+**Use the included script:**
+
+```bash
+./test-all-bots-ndjson.sh
+```
+
+This script sends all 15 bot entries in one NDJSON request, which more accurately reflects how Vercel sends batched logs. Expected output:
+
+```text
+Received 15 log entries from Vercel
+Filtered to 15 bot log(s)
+Successfully inserted 15 bot log(s) to BigQuery
 ```
 
 ---
