@@ -216,7 +216,7 @@ Filtered to 3 bot log(s)
 Successfully inserted 3 bot log(s) to BigQuery
 ```
 
-### 8. Test All 15+ Bot Types
+### 8. Test All 33 Bot Types
 
 #### Option A: Individual Requests (Sequential)
 
@@ -228,19 +228,37 @@ Test script that sends each bot as a separate request:
 BOTS=(
   "GPTBot/1.0"
   "ChatGPT-User/1.0"
+  "ChatGPT-PageFetcher/1.0"
   "ClaudeBot/1.0"
   "Anthropic-AI/1.0"
   "Google-Extended/1.0"
+  "GoogleOther/1.0"
+  "GoogleOther-Image/1.0"
   "PerplexityBot/1.0"
   "Perplexity-User/1.0"
+  "PPLX-Agent/1.0"
   "CCBot/2.0"
   "Bytespider/1.0"
   "Diffbot/2.0"
+  "DiffbotBot/1.0"
   "YouBot/1.0"
   "Cohere-AI/1.0"
+  "Cohere-User-Agent/1.0"
   "facebookbot/1.0"
+  "Meta-ExternalFetcher/1.0"
+  "Meta-Indexer/1.0"
   "ImagesiftBot/1.0"
+  "omgili/1.0"
   "Omgilibot/1.0"
+  "Applebot/1.0"
+  "Applebot-Extended/1.0"
+  "NeevaBot/1.0"
+  "SMTBot/1.0"
+  "LAION-crawler/1.0"
+  "LAION-crawler-v1/1.0"
+  "LAION-crawler-v2/1.0"
+  "LAION-crawler-test/1.0"
+  "LAION-crawler-prod/1.0"
 )
 
 for bot in "${BOTS[@]}"; do
@@ -261,7 +279,7 @@ Save as `test-all-bots.sh`, make executable (`chmod +x test-all-bots.sh`), and r
 
 #### Option B: NDJSON Format (Single Request) - **Recommended**
 
-This script tests all 15+ bots in a single NDJSON request (simulates real Vercel behavior):
+This script tests all 33 bots in a single NDJSON request (simulates real Vercel behavior):
 
 **Use the included script:**
 
@@ -269,12 +287,12 @@ This script tests all 15+ bots in a single NDJSON request (simulates real Vercel
 ./test-all-bots-ndjson.sh
 ```
 
-This script sends all 15 bot entries in one NDJSON request, which more accurately reflects how Vercel sends batched logs. Expected output:
+This script sends all 33 bot entries in one NDJSON request, which more accurately reflects how Vercel sends batched logs. Expected output:
 
 ```text
-Received 15 log entries from Vercel
-Filtered to 15 bot log(s)
-Successfully inserted 15 bot log(s) to BigQuery
+Received 33 log entries from Vercel
+Filtered to 33 bot log(s)
+Successfully inserted 33 bot log(s) to BigQuery
 ```
 
 **Technical Note:** The test script uses `Content-Type: text/plain` to bypass the Functions Framework's JSON body parser, which would fail on NDJSON. In production, Vercel sends with `Content-Type: application/json`, but Cloud Functions handles this correctly with raw body access.
@@ -358,9 +376,11 @@ SELECT
   bot_name,
   bot_category,
   method,
-  path,
-  status_code,
-  region
+  proxy_path,
+  proxy_status_code,
+  region,
+  execution_region,
+  cache_status
 FROM `your-project.your_dataset.your_table`
 WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 5 MINUTE)
 ORDER BY timestamp DESC
@@ -412,6 +432,15 @@ SELECT
 FROM `your-project.your_dataset.your_table`
 GROUP BY bot_category
 ORDER BY requests DESC;
+
+-- Verify new schema fields are populated
+SELECT
+  COUNT(DISTINCT request_id) as unique_request_ids,
+  COUNT(DISTINCT trace_id) as unique_trace_ids,
+  COUNT(*) FILTER (WHERE proxy_timestamp IS NOT NULL) as has_proxy_timestamp,
+  COUNT(*) FILTER (WHERE cache_id IS NOT NULL) as has_cache_id,
+  COUNT(*) FILTER (WHERE waf_action IS NOT NULL) as has_waf_action
+FROM `your-project.your_dataset.your_table`;
 ```
 
 ---
@@ -564,12 +593,12 @@ echo "Load test completed"
 ```sql
 -- Check insert latency
 SELECT
-  TIMESTAMP_DIFF(CURRENT_TIMESTAMP(), timestamp, SECOND) as latency_seconds,
+  TIMESTAMP_DIFF(processed_at, timestamp, SECOND) as processing_latency_seconds,
   COUNT(*) as logs_count
 FROM `your-project.your_dataset.your_table`
 WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 10 MINUTE)
-GROUP BY latency_seconds
-ORDER BY latency_seconds;
+GROUP BY processing_latency_seconds
+ORDER BY processing_latency_seconds;
 ```
 
 ---
@@ -580,7 +609,7 @@ Before considering deployment complete, verify:
 
 - [ ] Local function starts without errors
 - [ ] Verification header returns correctly
-- [ ] All 15+ bot types detected (use test script)
+- [ ] All 33 bot types detected (use test script)
 - [ ] Non-bot traffic filtered out
 - [ ] NDJSON format parsed correctly
 - [ ] Array user agent format handled

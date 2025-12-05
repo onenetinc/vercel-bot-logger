@@ -17,9 +17,75 @@ Before deploying, ensure you have:
 
 1. **Google Cloud Account** with billing enabled
 2. **gcloud CLI** installed - [Installation Guide](https://cloud.google.com/sdk/docs/install)
-3. **BigQuery dataset and table** created (provided by DVAN)
+3. **BigQuery dataset and table** created (see schema below)
 4. **Vercel account** with a project to monitor
 5. **Project built locally** (`npm run build` completed successfully)
+
+### BigQuery Table Schema (32 fields)
+
+The BigQuery table must be created with this exact schema:
+
+```sql
+CREATE TABLE `{project}.{dataset}.{table}` (
+  -- Core identifiers
+  log_id STRING NOT NULL,
+  request_id STRING,
+  trace_id STRING,
+  span_id STRING,
+
+  -- Timestamps
+  timestamp TIMESTAMP NOT NULL,
+  date DATE NOT NULL,
+  hour INT64 NOT NULL,
+  proxy_timestamp TIMESTAMP,
+  processed_at TIMESTAMP NOT NULL,
+
+  -- Bot detection
+  bot_name STRING NOT NULL,
+  bot_category STRING NOT NULL,
+  full_user_agent STRING NOT NULL,
+
+  -- HTTP request details
+  method STRING NOT NULL,
+  path STRING,
+  proxy_path STRING NOT NULL,
+  host STRING NOT NULL,
+  proxy_scheme STRING,
+  proxy_referer STRING,
+
+  -- Deployment context
+  deployment_id STRING NOT NULL,
+  project_id STRING NOT NULL,
+  source STRING NOT NULL,
+  entrypoint STRING,
+  environment STRING,
+
+  -- Response details
+  status_code INT64,
+  proxy_status_code INT64,
+  level STRING NOT NULL,
+
+  -- Network & performance
+  client_ip STRING,
+  region STRING NOT NULL,
+  execution_region STRING,
+
+  -- Caching
+  cache_status STRING,
+  cache_id STRING,
+
+  -- Security (WAF)
+  waf_action STRING,
+  waf_rule STRING,
+
+  -- Additional metadata
+  raw_message STRING
+)
+PARTITION BY date
+CLUSTER BY bot_category, bot_name, hour;
+```
+
+This schema maps to Vercel's log drain format and captures 33 bot types across 16 categories.
 
 ---
 
@@ -370,9 +436,12 @@ SELECT
   bot_name,
   bot_category,
   method,
-  path,
-  status_code,
-  region
+  proxy_path,
+  proxy_status_code,
+  region,
+  execution_region,
+  cache_status,
+  waf_action
 FROM `YOUR_PROJECT_ID.YOUR_DATASET.YOUR_TABLE`
 WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 5 MINUTE)
 ORDER BY timestamp DESC
@@ -381,11 +450,11 @@ LIMIT 20;
 
 **Expected output:**
 ```
-timestamp                  | bot_name     | bot_category | method | path       | status_code | region
----------------------------|--------------|--------------|--------|------------|-------------|--------
-2025-12-03 10:45:23 UTC   | GPTBot       | OpenAI       | GET    | /          | 200         | sfo1
-2025-12-03 10:45:25 UTC   | ClaudeBot    | Anthropic    | GET    | /api/test  | 200         | iad1
-2025-12-03 10:45:27 UTC   | PerplexityBot| Perplexity   | GET    | /about     | 200         | dfw1
+timestamp                  | bot_name     | bot_category | method | proxy_path | proxy_status_code | region | execution_region | cache_status | waf_action
+---------------------------|--------------|--------------|--------|------------|-------------------|--------|------------------|--------------|------------
+2025-12-03 10:45:23 UTC   | GPTBot       | OpenAI       | GET    | /          | 200               | sfo1   | iad1             | MISS         | NULL
+2025-12-03 10:45:25 UTC   | ClaudeBot    | Anthropic    | GET    | /api/test  | 200               | iad1   | iad1             | HIT          | NULL
+2025-12-03 10:45:27 UTC   | PerplexityBot| Perplexity   | GET    | /about     | 200               | dfw1   | dfw1             | MISS         | NULL
 ```
 
 #### 10.4: Run Acceptance Criteria Query

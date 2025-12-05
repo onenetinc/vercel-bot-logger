@@ -4,11 +4,11 @@ Stream LLM bot traffic from Vercel to BigQuery in real-time.
 
 ## Overview
 
-This Google Cloud Function (2nd gen) receives Vercel log drain webhooks, filters for 15+ LLM bot types, and streams the data to BigQuery for analytics.
+This Google Cloud Function (2nd gen) receives Vercel log drain webhooks, filters for 33 LLM bot types, and streams the data to BigQuery for analytics.
 
 **Features:**
 - ✅ Zero changes to your Next.js application
-- ✅ Filters 15+ bot types (GPTBot, ClaudeBot, PerplexityBot, etc.)
+- ✅ Filters 33 bot types (GPTBot, ClaudeBot, PerplexityBot, etc.)
 - ✅ Real-time streaming to BigQuery
 - ✅ HMAC-SHA1 signature verification
 - ✅ Production-ready error handling
@@ -24,7 +24,7 @@ Vercel App → Vercel Log Drain → Cloud Function → BigQuery
 
 - 🚀 [Deployment Guide](DEPLOYMENT.md) - Complete Google Cloud Functions deployment
 - 🧪 [Testing Guide](TESTING.md) - Comprehensive testing documentation
-- 🤖 [Supported Bots](#supported-bots) - List of all 15+ detected bots
+- 🤖 [Supported Bots](#supported-bots) - List of all 33 detected bots
 - 📊 [BigQuery Schema](#bigquery-schema) - Table structure and queries
 
 ## Prerequisites
@@ -168,53 +168,101 @@ curl -X POST http://localhost:8080 \
 
 ## Supported Bots
 
-The function detects and categorizes these LLM bots:
+The function detects and categorizes 33 LLM bots:
 
 | Bot Name | Category | Pattern |
 |----------|----------|---------|
 | GPTBot | OpenAI | `gptbot` |
 | ChatGPT-User | OpenAI | `chatgpt-user` |
+| ChatGPT-PageFetcher | OpenAI | `chatgpt.*pagefetcher` |
 | ClaudeBot | Anthropic | `claudebot` |
 | Anthropic-AI | Anthropic | `anthropic-ai` |
 | Google-Extended | Google | `google-extended` |
+| GoogleOther | Google | `googleother(?!-image)` |
+| GoogleOther-Image | Google | `googleother-image` |
 | PerplexityBot | Perplexity | `perplexitybot` |
 | Perplexity-User | Perplexity | `perplexity-user` |
+| PPLX-Agent | Perplexity | `pplx.*agent` |
 | CCBot | CommonCrawl | `ccbot` |
 | Bytespider | ByteDance | `bytespider` |
 | Diffbot | Diffbot | `diffbot` |
+| DiffbotBot | Diffbot | `diffbotbot` |
 | YouBot | You.com | `youbot` |
 | Cohere-AI | Cohere | `cohere-ai` |
+| Cohere-User-Agent | Cohere | `cohere-user-agent` |
 | FacebookBot | Meta | `facebookbot` |
+| Meta-ExternalFetcher | Meta | `meta-externalfetcher` |
+| Meta-Indexer | Meta | `meta-indexer` |
 | ImagesiftBot | ImageSift | `imagesiftbot` |
+| omgili | Omgili | `omgili(?!bot)` |
 | Omgilibot | Omgili | `omgilibot` |
+| Applebot | Apple | `applebot(?!-extended)` |
+| Applebot-Extended | Apple | `applebot-extended` |
+| NeevaBot | Neeva | `neevabot` |
+| SMTBot | SMT | `smtbot` |
+| LAION-crawler | LAION | `laion.*crawler` |
 
-All patterns are case-insensitive.
+All patterns are case-insensitive. Note: LAION-crawler pattern matches all LAION variants (laion-crawler, laion-crawler-v1, laion-crawler-v2, laion-crawler-test, laion-crawler-prod).
 
 ## BigQuery Schema
 
-The table contains these fields:
+The table contains 32 fields mapping to Vercel's log drain format:
 
 ```sql
 CREATE TABLE `{project}.{dataset}.{table}` (
+  -- Core identifiers
   log_id STRING NOT NULL,
+  request_id STRING,
+  trace_id STRING,
+  span_id STRING,
+
+  -- Timestamps
   timestamp TIMESTAMP NOT NULL,
   date DATE NOT NULL,
   hour INT64 NOT NULL,
+  proxy_timestamp TIMESTAMP,
+  processed_at TIMESTAMP NOT NULL,
+
+  -- Bot detection
   bot_name STRING NOT NULL,
   bot_category STRING NOT NULL,
   full_user_agent STRING NOT NULL,
+
+  -- HTTP request details
   method STRING NOT NULL,
-  path STRING NOT NULL,
+  path STRING,
+  proxy_path STRING NOT NULL,
   host STRING NOT NULL,
-  status_code INT64,
-  client_ip STRING,
-  region STRING NOT NULL,
-  cache_status STRING,
-  referer STRING,
-  response_size INT64,
+  proxy_scheme STRING,
+  proxy_referer STRING,
+
+  -- Deployment context
   deployment_id STRING NOT NULL,
   project_id STRING NOT NULL,
-  environment STRING NOT NULL
+  source STRING NOT NULL,
+  entrypoint STRING,
+  environment STRING,
+
+  -- Response details
+  status_code INT64,
+  proxy_status_code INT64,
+  level STRING NOT NULL,
+
+  -- Network & performance
+  client_ip STRING,
+  region STRING NOT NULL,
+  execution_region STRING,
+
+  -- Caching
+  cache_status STRING,
+  cache_id STRING,
+
+  -- Security (WAF)
+  waf_action STRING,
+  waf_rule STRING,
+
+  -- Additional metadata
+  raw_message STRING
 )
 PARTITION BY date
 CLUSTER BY bot_category, bot_name, hour;
