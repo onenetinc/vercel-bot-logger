@@ -1,7 +1,10 @@
 node_modules/
-src/
-tsconfig.json
 .git/
 .gitignore
 *.md
 README.md
+.env*
+test/
+tests/
+*.test.ts
+*.spec.ts

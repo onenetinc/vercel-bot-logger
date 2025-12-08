@@ -276,7 +276,7 @@ gcloud functions deploy vercel-bot-logger \
   --timeout=60s \
   --memory=256MB \
   --max-instances=10 \
-  --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
+  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
   --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
 ```
 
@@ -381,7 +381,7 @@ gcloud functions deploy vercel-bot-logger \
   --timeout=60s \
   --memory=256MB \
   --max-instances=10 \
-  --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
+  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
   --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
 ```
 
@@ -821,7 +821,7 @@ gcloud functions deploy vercel-bot-logger \
   --timeout=60s \
   --memory=256MB \
   --max-instances=10 \
-  --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
+  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
   --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
 ```
 
@@ -895,11 +895,10 @@ steps:
       - --timeout=60s
       - --memory=256MB
       - --max-instances=10
-      - --set-env-vars=GCP_PROJECT=${_GCP_PROJECT},DATASET_ID=${_DATASET_ID},TABLE_ID=${_TABLE_ID}
+      - --set-env-vars=GCP_PROJECT=dv-open-ai-poc,DATASET_ID=${_DATASET_ID},TABLE_ID=${_TABLE_ID}
       - --set-secrets=VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
 
 substitutions:
-  _GCP_PROJECT: 'YOUR_PROJECT_ID'
   _DATASET_ID: 'YOUR_DATASET'
   _TABLE_ID: 'YOUR_TABLE'
 
