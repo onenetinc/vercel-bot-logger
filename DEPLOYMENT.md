@@ -181,9 +181,11 @@ echo "Service Account: $SERVICE_ACCOUNT"
 
 #### 4.1: Grant BigQuery Permissions
 
+**Note:** The BigQuery dataset is in a different project (`dvan-media-analytics-ca`), so we need to grant permissions there:
+
 ```bash
-# Grant BigQuery Data Editor role (allows inserting data)
-gcloud projects add-iam-policy-binding $PROJECT_ID \
+# Grant BigQuery Data Editor role in the BigQuery project
+gcloud projects add-iam-policy-binding dvan-media-analytics-ca \
   --member="serviceAccount:$SERVICE_ACCOUNT" \
   --role="roles/bigquery.dataEditor"
 ```
@@ -260,7 +262,7 @@ gcloud functions deploy vercel-bot-logger \
   --timeout=60s \
   --memory=256MB \
   --max-instances=10 \
-  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
+  --set-env-vars GCP_PROJECT=dvan-media-analytics-ca,DATASET_ID=llmbot,TABLE_ID=raw_llmbot_test \
   --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
@@ -365,7 +367,7 @@ gcloud functions deploy vercel-bot-logger \
   --timeout=60s \
   --memory=256MB \
   --max-instances=10 \
-  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
+  --set-env-vars GCP_PROJECT=dvan-media-analytics-ca,DATASET_ID=llmbot,TABLE_ID=raw_llmbot_test \
   --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
@@ -761,166 +763,12 @@ ORDER BY date DESC, requests DESC;
 
 ---
 
-## GitHub Continuous Deployment
-
-### Option 1: Deploy Directly from GitHub
-
-Once your code is pushed to GitHub, you can deploy directly from the repository:
-
-```bash
-# Deploy from the main branch
-gcloud functions deploy vercel-bot-logger \
-  --gen2 \
-  --runtime=nodejs20 \
-  --region=us-central1 \
-  --source=https://github.com/onenetinc/vercel-bot-logger \
-  --source-branch=main \
-  --entry-point=handleVercelLogs \
-  --trigger-http \
-  --allow-unauthenticated \
-  --timeout=60s \
-  --memory=256MB \
-  --max-instances=10 \
-  --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
-```
-
-### Option 2: Automatic Deployment on Push
-
-Set up Cloud Build to automatically deploy when you push to the main branch.
-
-#### Step 1: Connect GitHub Repository
-
-```bash
-# Connect Cloud Build to GitHub (one-time setup)
-gcloud alpha builds connections create github vercel-bot-logger-connection \
-  --region=us-central1
-
-# This opens a browser for GitHub authorization
-# Follow the prompts to connect your GitHub account
-```
-
-#### Step 2: Link the Repository
-
-```bash
-# Link your specific repository
-gcloud alpha builds repositories create vercel-bot-logger-repo \
-  --remote-uri=https://github.com/onenetinc/vercel-bot-logger.git \
-  --connection=vercel-bot-logger-connection \
-  --region=us-central1
-```
-
-#### Step 3: Create Build Trigger
-
-```bash
-gcloud builds triggers create github \
-  --name=vercel-bot-logger-auto-deploy \
-  --region=us-central1 \
-  --repo-name=vercel-bot-logger \
-  --repo-owner=onenetinc \
-  --branch-pattern=^main$ \
-  --build-config=cloudbuild.yaml
-```
-
-#### Step 4: Add cloudbuild.yaml to Repository
-
-Create `cloudbuild.yaml` in the root of your repository with this content:
-
-```yaml
-steps:
-  # Install dependencies
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['install']
-
-  # Build TypeScript
-  - name: 'node:20'
-    entrypoint: npm
-    args: ['run', 'build']
-
-  # Deploy to Cloud Functions
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    args:
-      - gcloud
-      - functions
-      - deploy
-      - vercel-bot-logger
-      - --gen2
-      - --runtime=nodejs20
-      - --region=us-central1
-      - --source=.
-      - --entry-point=handleVercelLogs
-      - --trigger-http
-      - --allow-unauthenticated
-      - --timeout=60s
-      - --memory=256MB
-      - --max-instances=10
-      - --set-env-vars=GCP_PROJECT=dv-open-ai-poc,DATASET_ID=${_DATASET_ID},TABLE_ID=${_TABLE_ID}
-      - --set-secrets=VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
-
-substitutions:
-  _DATASET_ID: 'YOUR_DATASET'
-  _TABLE_ID: 'YOUR_TABLE'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-```
-
-**Important:** Replace the substitution values in `cloudbuild.yaml` with your actual project details.
-
-#### Step 5: Grant Cloud Build Permissions
-
-```bash
-# Get project details
-PROJECT_ID=$(gcloud config get-value project)
-PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
-
-# Grant Cloud Functions Developer role to Cloud Build
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-  --role="roles/cloudfunctions.developer"
-
-# Grant IAM admin to allow Cloud Build to set IAM policies
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-  --role="roles/iam.serviceAccountUser"
-
-# Grant Secret Manager access
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-  --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \
-  --role="roles/secretmanager.secretAccessor"
-```
-
-#### Step 6: Test Auto-Deployment
-
-```bash
-# Make a change, commit, and push
-git add .
-git commit -m "Test auto-deployment"
-git push origin main
-
-# Monitor the build
-gcloud builds list --limit=5
-
-# View build logs
-gcloud builds log $(gcloud builds list --limit=1 --format="value(id)")
-```
-
-Now every push to `main` will automatically:
-
-1. Install dependencies
-2. Build TypeScript
-3. Deploy to Cloud Functions
-
----
-
 ## Additional Resources
 
 - [Google Cloud Functions Documentation](https://cloud.google.com/functions/docs)
 - [BigQuery Streaming API](https://cloud.google.com/bigquery/docs/streaming-data-into-bigquery)
 - [Vercel Log Drains](https://vercel.com/docs/observability/log-drains)
 - [gcloud CLI Reference](https://cloud.google.com/sdk/gcloud/reference)
-- [Cloud Build GitHub Integration](https://cloud.google.com/build/docs/automating-builds/github/connect-repo-github)
 - [GitHub Repository](https://github.com/onenetinc/vercel-bot-logger)
 
 ---
