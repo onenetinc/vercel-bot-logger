@@ -7,14 +7,13 @@ import type { HttpFunction } from '@google-cloud/functions-framework/build/src/f
 import { BigQueryService } from './services/bigquery.service'
 import { VercelLogEntry } from './types/vercel.types'
 import { transformLogToBigQuery } from './utils/log-transformer'
-import { getVerificationHeader, verifySignature } from './utils/vercel-auth'
+import { verifySignature } from './utils/vercel-auth'
 
 // Environment variables (required)
 const GCP_PROJECT = process.env.GCP_PROJECT!
 const DATASET_ID = process.env.DATASET_ID!
 const TABLE_ID = process.env.TABLE_ID!
 const VERCEL_LOG_DRAIN_SECRET = process.env.VERCEL_LOG_DRAIN_SECRET!
-const VERCEL_VERIFY_TOKEN = process.env.VERCEL_VERIFY_TOKEN!
 
 // Initialize BigQuery service (singleton)
 const bigQueryService = new BigQueryService(GCP_PROJECT, DATASET_ID, TABLE_ID)
@@ -23,21 +22,15 @@ const bigQueryService = new BigQueryService(GCP_PROJECT, DATASET_ID, TABLE_ID)
  * HTTP Cloud Function handler for Vercel log drain webhooks
  *
  * Flow:
- * 1. Return verification header for Vercel setup
- * 2. Verify HMAC-SHA1 signature
- * 3. Parse NDJSON log entries
- * 4. Filter for bot traffic only
- * 5. Stream to BigQuery
- * 6. Always return 200 OK (prevents retry loops)
+ * 1. Verify HMAC-SHA1 signature
+ * 2. Parse NDJSON log entries
+ * 3. Filter for bot traffic only
+ * 4. Stream to BigQuery
+ * 5. Always return 200 OK (prevents retry loops)
  */
 export const handleVercelLogs: HttpFunction = async (req, res) => {
   try {
-    // 1. Handle Vercel verification challenge
-    // When setting up the log drain, Vercel checks for this header
-    const verifyHeader = getVerificationHeader(VERCEL_VERIFY_TOKEN)
-    res.set(verifyHeader)
-
-    // 2. Get raw body (handle both string and parsed object)
+    // 1. Get raw body (handle both string and parsed object)
     const signature = req.headers['x-vercel-signature'] as string | undefined
     let rawBody: string
 
@@ -52,7 +45,7 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
       rawBody = ''
     }
 
-    // 3. Verify request signature (HMAC-SHA1)
+    // 2. Verify request signature (HMAC-SHA1)
     const isValidSignature = verifySignature(
       rawBody,
       signature,
@@ -66,7 +59,7 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
       return
     }
 
-    // 4. Parse NDJSON log entries
+    // 3. Parse NDJSON log entries
     const logLines = rawBody.trim().split('\n')
     const logEntries: VercelLogEntry[] = []
 

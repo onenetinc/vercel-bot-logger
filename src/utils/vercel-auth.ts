@@ -28,15 +28,3 @@ export function verifySignature(
 
   return signature === expectedSignature;
 }
-
-/**
- * Generates verification header for initial Vercel setup
- *
- * When configuring the log drain, Vercel checks for this header
- * to verify ownership of the endpoint
- */
-export function getVerificationHeader(token: string): Record<string, string> {
-  return {
-    'x-vercel-verify': token,
-  };
-}

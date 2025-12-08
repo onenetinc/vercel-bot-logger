@@ -152,22 +152,7 @@ echo -n "PLACEHOLDER_SECRET" | gcloud secrets create vercel-log-drain-secret \
   --replication-policy="automatic"
 ```
 
-#### 3.2: Create Vercel Verification Token
-
-```bash
-# Generate a secure random token
-VERIFY_TOKEN=$(openssl rand -hex 32)
-echo "Generated verification token: $VERIFY_TOKEN"
-
-# Create the secret
-echo -n "$VERIFY_TOKEN" | gcloud secrets create vercel-verify-token \
-  --data-file=- \
-  --replication-policy="automatic"
-```
-
-**Save this token** - you'll need it when configuring Vercel!
-
-#### 3.3: Verify Secrets Were Created
+#### 3.2: Verify Secret Was Created
 
 ```bash
 gcloud secrets list
@@ -177,7 +162,6 @@ gcloud secrets list
 ```
 NAME                        CREATED              REPLICATION_POLICY  LOCATIONS
 vercel-log-drain-secret     2025-12-03T10:30:00  automatic           -
-vercel-verify-token         2025-12-03T10:30:00  automatic           -
 ```
 
 ---
@@ -277,7 +261,7 @@ gcloud functions deploy vercel-bot-logger \
   --memory=256MB \
   --max-instances=10 \
   --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
+  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
 **Deployment Progress:**
@@ -382,7 +366,7 @@ gcloud functions deploy vercel-bot-logger \
   --memory=256MB \
   --max-instances=10 \
   --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
+  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
 #### 9.4: Verify Connection
@@ -568,46 +552,22 @@ gcloud secrets versions access latest --secret="vercel-verify-token"
 
 ### Issue: Vercel verification fails (no green checkmark)
 
-**Cause:** Verification token mismatch or function not accessible
+**Cause:** Function not accessible or Vercel cannot reach the endpoint
 
-**Diagnosis:**
+**Solution:**
 
 ```bash
-# Test function directly
+# Check function status
+gcloud functions describe vercel-bot-logger \
+  --gen2 \
+  --region=us-central1 \
+  --format="value(state,serviceConfig.uri)"
+
+# Should show: ACTIVE
+
+# Test function is accessible
 curl -i $FUNCTION_URL
-
-# Look for x-vercel-verify header
 ```
-
-**Expected:**
-```
-x-vercel-verify: YOUR_TOKEN_HERE
-```
-
-**Solutions:**
-
-1. **Token mismatch:**
-   ```bash
-   # Check current token
-   gcloud secrets versions access latest --secret="vercel-verify-token"
-
-   # Update if needed
-   echo -n "NEW_TOKEN" | gcloud secrets versions add vercel-verify-token --data-file=-
-
-   # Redeploy
-   gcloud functions deploy vercel-bot-logger --gen2 --region=us-central1 # ... (full command from Step 6)
-   ```
-
-2. **Function not accessible:**
-   ```bash
-   # Check function status
-   gcloud functions describe vercel-bot-logger \
-     --gen2 \
-     --region=us-central1 \
-     --format="value(state,serviceConfig.uri)"
-
-   # Should show: ACTIVE
-   ```
 
 ---
 
@@ -822,7 +782,7 @@ gcloud functions deploy vercel-bot-logger \
   --memory=256MB \
   --max-instances=10 \
   --set-env-vars GCP_PROJECT=dv-open-ai-poc,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
+  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
 ### Option 2: Automatic Deployment on Push
