@@ -813,7 +813,7 @@ gcloud functions deploy vercel-bot-logger \
   --gen2 \
   --runtime=nodejs20 \
   --region=us-central1 \
-  --source=https://github.com/trulyonenetinc/vercel-bot-logger \
+  --source=https://github.com/onenetinc/vercel-bot-logger \
   --source-branch=main \
   --entry-point=handleVercelLogs \
   --trigger-http \
@@ -845,7 +845,7 @@ gcloud alpha builds connections create github vercel-bot-logger-connection \
 ```bash
 # Link your specific repository
 gcloud alpha builds repositories create vercel-bot-logger-repo \
-  --remote-uri=https://github.com/trulyonenetinc/vercel-bot-logger.git \
+  --remote-uri=https://github.com/onenetinc/vercel-bot-logger.git \
   --connection=vercel-bot-logger-connection \
   --region=us-central1
 ```
@@ -857,7 +857,7 @@ gcloud builds triggers create github \
   --name=vercel-bot-logger-auto-deploy \
   --region=us-central1 \
   --repo-name=vercel-bot-logger \
-  --repo-owner=trulyonenetinc \
+  --repo-owner=onenetinc \
   --branch-pattern=^main$ \
   --build-config=cloudbuild.yaml
 ```
@@ -962,7 +962,7 @@ Now every push to `main` will automatically:
 - [Vercel Log Drains](https://vercel.com/docs/observability/log-drains)
 - [gcloud CLI Reference](https://cloud.google.com/sdk/gcloud/reference)
 - [Cloud Build GitHub Integration](https://cloud.google.com/build/docs/automating-builds/github/connect-repo-github)
-- [GitHub Repository](https://github.com/trulyonenetinc/vercel-bot-logger)
+- [GitHub Repository](https://github.com/onenetinc/vercel-bot-logger)
 
 ---
 
