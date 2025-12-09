@@ -2,19 +2,19 @@
  * BigQuery streaming insert service
  */
 
-import { BigQuery } from '@google-cloud/bigquery';
-import { BotLogRow } from '../types/bigquery.types';
+import { BigQuery } from '@google-cloud/bigquery'
+import { BotLogRow } from '../types/bigquery.types'
 
 export class BigQueryService {
-  private bigquery: BigQuery;
-  private datasetId: string;
-  private tableId: string;
+  private bigquery: BigQuery
+  private datasetId: string
+  private tableId: string
 
   constructor(projectId: string, datasetId: string, tableId: string) {
     // Uses Application Default Credentials (Workload Identity)
-    this.bigquery = new BigQuery({ projectId });
-    this.datasetId = datasetId;
-    this.tableId = tableId;
+    this.bigquery = new BigQuery({ projectId })
+    this.datasetId = datasetId
+    this.tableId = tableId
   }
 
   /**
@@ -27,26 +27,26 @@ export class BigQueryService {
    */
   async insertRows(rows: BotLogRow[]): Promise<void> {
     if (rows.length === 0) {
-      console.log('No bot traffic to insert');
-      return;
+      console.log('No bot traffic to insert')
+      return
     }
 
     try {
       await this.bigquery
         .dataset(this.datasetId)
         .table(this.tableId)
-        .insert(rows);
+        .insert(rows)
 
-      console.log(`Successfully inserted ${rows.length} bot log(s) to BigQuery`);
+      console.log(`Successfully inserted ${rows.length} bot log(s) to BigQuery`)
     } catch (error) {
       // Log error but don't throw - we return 200 to prevent retry loops
-      console.error('BigQuery insert error:', error);
+      console.error('BigQuery insert error:', error)
 
       // Log individual row errors if available
       if (error && typeof error === 'object' && 'errors' in error) {
-        const bqError = error as { errors?: unknown[] };
+        const bqError = error as { errors?: unknown[] }
         if (Array.isArray(bqError.errors)) {
-          console.error('Row errors:', JSON.stringify(bqError.errors, null, 2));
+          console.error('Row errors:', JSON.stringify(bqError.errors, null, 2))
         }
       }
     }

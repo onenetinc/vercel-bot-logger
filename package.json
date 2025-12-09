@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node -r dotenv/config node_modules/.bin/functions-framework --target=handleVercelLogs --signature-type=http dotenv_config_path=.env.local",
-    "deploy": "npm run build && gcloud functions deploy vercel-bot-logger --gen2 --runtime=nodejs20 --region=us-central1 --source=. --entry-point=handleVercelLogs --trigger-http --allow-unauthenticated"
+    "deploy": "npm run build && gcloud functions deploy vercel-bot-logger --gen2 --runtime=nodejs20 --region=us-central1 --source=. --entry-point=handleVercelLogs --trigger-http --allow-unauthenticated --timeout=60s --memory=256MB --max-instances=10 --service-account=dv-open-ai-poc@appspot.gserviceaccount.com --set-env-vars GCP_PROJECT=dvan-media-analytics-ca,DATASET_ID=llmbot,TABLE_ID=raw_llmbot_test --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest"
   },
   "engines": {
     "node": "20"

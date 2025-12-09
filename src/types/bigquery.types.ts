@@ -54,7 +54,6 @@ export interface BotLogRow {
   project_id: string;                // Vercel project ID
   source: string;                    // Log source (build, edge, lambda, static, etc.)
   entrypoint: string | null;         // Function entry point
-  environment: string | null;        // production or preview
 
   // Response details
   status_code: number | null;        // Top-level HTTP status code

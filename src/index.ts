@@ -30,18 +30,26 @@ const bigQueryService = new BigQueryService(GCP_PROJECT, DATASET_ID, TABLE_ID)
  */
 export const handleVercelLogs: HttpFunction = async (req, res) => {
   try {
-    // 1. Get raw body (handle both string and parsed object)
+    // 1. Get raw body as string (NDJSON format expected)
     const signature = req.headers['x-vercel-signature'] as string | undefined
     let rawBody: string
 
-    // If body-parser failed and gave us an object, or if it's already a string
+    // Cloud Functions may parse the body, we need the raw string for NDJSON
     if (typeof req.body === 'string') {
       rawBody = req.body
+    } else if (Buffer.isBuffer(req.body)) {
+      rawBody = req.body.toString('utf8')
+    } else if ((req as any).rawBody) {
+      // Use rawBody if available (Cloud Functions provides this)
+      rawBody = Buffer.isBuffer((req as any).rawBody)
+        ? (req as any).rawBody.toString('utf8')
+        : (req as any).rawBody
     } else if (req.body && typeof req.body === 'object') {
-      // Body was parsed as JSON (single log entry)
+      // Body was auto-parsed - this shouldn't happen with NDJSON
+      // But handle it gracefully
       rawBody = JSON.stringify(req.body)
+      console.warn('Body was auto-parsed as object, expected NDJSON string')
     } else {
-      // Empty body
       rawBody = ''
     }
 
@@ -59,7 +67,7 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
       return
     }
 
-    // 3. Parse NDJSON log entries
+    // 3. Parse NDJSON log entries (newline-delimited JSON)
     const logLines = rawBody.trim().split('\n')
     const logEntries: VercelLogEntry[] = []
 
@@ -70,14 +78,16 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
           logEntries.push(entry)
         }
       } catch (parseError) {
-        console.error('Failed to parse log line:', parseError)
+        console.error('Failed to parse NDJSON line:', parseError)
         // Continue processing other lines
       }
     }
 
-    // logEntries.forEach(log => console.dir(log, { depth: 10 }))
-
     console.log(`Received ${logEntries.length} log entries from Vercel`)
+
+    logEntries.forEach(entry => {
+      console.dir(entry, { depth: 10 })
+    })
 
     // 4. Filter and transform bot traffic only
     const botLogs = logEntries
@@ -90,6 +100,7 @@ export const handleVercelLogs: HttpFunction = async (req, res) => {
 
     // 5. Stream to BigQuery
     if (botLogs.length > 0) {
+      console.log('🚀 Streaming to BigQuery...')
       await bigQueryService.insertRows(botLogs)
     }
 
