@@ -39,7 +39,6 @@ Before testing, ensure you have:
    # DATASET_ID=your_bigquery_dataset
    # TABLE_ID=your_bigquery_table
    # VERCEL_LOG_DRAIN_SECRET=your-vercel-secret
-   # VERCEL_VERIFY_TOKEN=your-vercel-token
    ```
 
    **Note:** `.env.local` is already in `.gitignore` and will not be committed.
@@ -56,26 +55,7 @@ npm start
 
 This starts the Cloud Function on `http://localhost:8080`
 
-### 2. Test Verification Header
-
-Verify that the function returns the verification header:
-
-```bash
-curl -i http://localhost:8080
-```
-
-**Expected output:**
-
-```
-HTTP/1.1 200 OK
-x-vercel-verify: your-token
-Content-Type: text/html; charset=utf-8
-Content-Length: 2
-
-OK
-```
-
-### 3. Test Bot Detection - GPTBot
+### 2. Test Bot Detection - GPTBot
 
 ```bash
 curl -X POST http://localhost:8080 \
@@ -103,13 +83,13 @@ curl -X POST http://localhost:8080 \
 
 **Expected console output:**
 
-```
+```text
 Received 1 log entries from Vercel
 Filtered to 1 bot log(s)
 Successfully inserted 1 bot log(s) to BigQuery
 ```
 
-### 4. Test Bot Detection - ClaudeBot
+### 3. Test Bot Detection - ClaudeBot
 
 ```bash
 curl -X POST http://localhost:8080 \
@@ -136,7 +116,7 @@ curl -X POST http://localhost:8080 \
   }'
 ```
 
-### 5. Test Array User Agent Format
+### 4. Test Array User Agent Format
 
 Test handling of user agent as an array:
 
@@ -164,7 +144,7 @@ curl -X POST http://localhost:8080 \
   }'
 ```
 
-### 6. Test Non-Bot Traffic (Should Be Filtered Out)
+### 5. Test Non-Bot Traffic (Should Be Filtered Out)
 
 ```bash
 curl -X POST http://localhost:8080 \
@@ -192,13 +172,13 @@ curl -X POST http://localhost:8080 \
 
 **Expected console output:**
 
-```
+```text
 Received 1 log entries from Vercel
 Filtered to 0 bot log(s)
 No bot traffic to insert
 ```
 
-### 7. Test NDJSON Format (Multiple Logs)
+### 6. Test NDJSON Format (Multiple Logs)
 
 ```bash
 curl -X POST http://localhost:8080 \
@@ -210,13 +190,13 @@ curl -X POST http://localhost:8080 \
 
 **Expected console output:**
 
-```
+```text
 Received 3 log entries from Vercel
 Filtered to 3 bot log(s)
 Successfully inserted 3 bot log(s) to BigQuery
 ```
 
-### 8. Test All 33 Bot Types
+### 7. Test All 33 Bot Types
 
 #### Option A: Individual Requests (Sequential)
 
@@ -313,7 +293,7 @@ gcloud functions deploy vercel-bot-logger \
   --trigger-http \
   --allow-unauthenticated \
   --set-env-vars GCP_PROJECT=your-project,DATASET_ID=your_dataset,TABLE_ID=your_table \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
+  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
 ### 2. Get the Function URL
@@ -327,13 +307,7 @@ FUNCTION_URL=$(gcloud functions describe vercel-bot-logger \
 echo "Function URL: $FUNCTION_URL"
 ```
 
-### 3. Test Verification Header
-
-```bash
-curl -i $FUNCTION_URL
-```
-
-### 4. Simulate Bot Traffic to Your Vercel App
+### 3. Simulate Bot Traffic to Your Vercel App
 
 Once the log drain is configured, trigger real bot traffic:
 
@@ -348,7 +322,7 @@ curl -A "ClaudeBot/1.0" https://your-vercel-app.com/api/test
 curl -A "PerplexityBot/1.0" https://your-vercel-app.com/about
 ```
 
-### 5. Check Cloud Function Logs
+### 4. Check Cloud Function Logs
 
 ```bash
 # Real-time logs
@@ -365,7 +339,7 @@ gcloud functions logs read vercel-bot-logger \
   | grep "bot log"
 ```
 
-### 6. Verify Data in BigQuery
+### 5. Verify Data in BigQuery
 
 Within 60 seconds of bot traffic, run this query:
 
@@ -387,7 +361,7 @@ ORDER BY timestamp DESC
 LIMIT 20;
 ```
 
-### 7. Verify Bot Detection (Acceptance Criteria)
+### 6. Verify Bot Detection (Acceptance Criteria)
 
 ```sql
 -- From Objective.md
@@ -399,7 +373,7 @@ GROUP BY bot_name;
 
 **Expected output:**
 
-```
+```text
 bot_name         | requests
 -----------------|---------
 GPTBot          | 5
@@ -408,7 +382,7 @@ PerplexityBot   | 2
 ...
 ```
 
-### 8. Check Data Quality
+### 7. Check Data Quality
 
 ```sql
 -- Verify no null bot names

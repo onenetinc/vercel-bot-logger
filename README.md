@@ -43,16 +43,11 @@ gcloud services enable bigquery.googleapis.com
 gcloud services enable secretmanager.googleapis.com
 ```
 
-### 2. Create Secrets in Secret Manager
+### 2. Create Secret in Secret Manager
 
 ```bash
 # Store Vercel log drain secret (you'll get this from Vercel)
 echo -n "YOUR_VERCEL_SECRET" | gcloud secrets create vercel-log-drain-secret \
-  --data-file=- \
-  --replication-policy="automatic"
-
-# Store Vercel verification token (you choose this)
-echo -n "YOUR_VERIFY_TOKEN" | gcloud secrets create vercel-verify-token \
   --data-file=- \
   --replication-policy="automatic"
 ```
@@ -93,7 +88,7 @@ gcloud functions deploy vercel-bot-logger \
   --memory=256MB \
   --max-instances=10 \
   --set-env-vars GCP_PROJECT=YOUR_PROJECT_ID,DATASET_ID=YOUR_DATASET,TABLE_ID=YOUR_TABLE \
-  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest,VERCEL_VERIFY_TOKEN=vercel-verify-token:latest
+  --set-secrets VERCEL_LOG_DRAIN_SECRET=vercel-log-drain-secret:latest
 ```
 
 Replace:
@@ -121,12 +116,7 @@ Copy this URL - you'll need it for Vercel configuration.
    - **Sources**: Runtime, Edge, Static
    - **Environments**: Production
    - **Endpoint URL**: [Paste your Cloud Function URL]
-4. Copy the verification token shown
-5. Update the secret in Secret Manager (if different):
-   ```bash
-   echo -n "VERCEL_VERIFICATION_TOKEN" | gcloud secrets versions add vercel-verify-token --data-file=-
-   ```
-6. Click **"Verify"** - you should see a green checkmark ✓
+4. Click **"Create"** to enable the log drain
 
 ## Testing
 
@@ -241,7 +231,6 @@ CREATE TABLE `{project}.{dataset}.{table}` (
   project_id STRING NOT NULL,
   source STRING NOT NULL,
   entrypoint STRING,
-  environment STRING,
 
   -- Response details
   status_code INT64,
